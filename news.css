@@ -147,3 +147,9 @@ main {
 .news-source {
     margin-block: 12px;
 }
+
+.logo {
+            max-width: 100px; /* Adjusted to match screenshot */
+            padding: 5px;
+            border-radius: 20px;
+        }
