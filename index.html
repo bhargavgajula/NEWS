@@ -1,118 +1,161 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>News App</title>
-    <link rel="stylesheet" href="news.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>News App</title>
+  <link rel="stylesheet" href="news.css">
 </head>
-
 <body>
 <nav>
-    <div class="main-nav container flex">
-        <img src="cdg.jpg" alt="logo">
-    </div>
+  <div class="main-nav container flex">
+    <img src="cdg.jpg" alt="logo">
+  </div>
 </nav>
 
-
 <main>
-    <div class="cards-container container flex" id="cardscontainer">
-
-
-
-    </div>
+  <div class="cards-container container flex" id="cardscontainer"></div>
 </main>
 
 <template id="template-news-card">
-    <div class="card">
-        <div class="card-header">
-            <img src="https://via.placeholder.com/400x200" alt="" id="news-img">
-        </div>
-        <div class="card-content">
-            <h3 id="news-title">This is the Title</h3>
-            <h6 class="news-source" id="news-source">constGenius 02/02/2024</h6>
-            <p class="news-desc" id="news-desc">Lorem ipsum dolor sit, amet consectetur adipisicing elit. Rem
-                incidunt ratione, dolore beatae quaerat voluptatum autem fugit voluptas minima eligendi facere
-                tenetur cumque. Dolorem porro, fugiat distinctio a accusamus cum!</p>
-        </div>
+  <div class="card">
+    <div class="card-header">
+      <img src="https://via.placeholder.com/400x200" alt="" id="news-img">
     </div>
+    <div class="card-content">
+      <h3 id="news-title">This is the Title</h3>
+      <h6 class="news-source" id="news-source">constGenius 02/02/2024</h6>
+      <p class="news-desc" id="news-desc">Lorem ipsum dolor sit, amet consectetur adipisicing elit. Rem incidunt ratione, dolore beatae quaerat voluptatum autem fugit voluptas minima eligendi facere tenetur cumque. Dolorem porro, fugiat distinctio a accusamus cum!</p>
+    </div>
+  </div>
 </template>
 
-
-</body>
 <script>
-    const API_KEY = "dc428cd29cad43c2a193a74e3d2fb640";
-    const url = "https://newsapi.org/v2/everything?q=";
+  const API_KEY = "AIzaSyDfMbHgSvWY4KT2coSua-LlMonaL4_I3FQ"; // Replace with your Google Cloud API key
+  const CSE_ID = "c3d37feaf90974788"; // Replace with your Custom Search Engine ID
+  const BASE_URL = "https://www.googleapis.com/customsearch/v1";
 
-    // Set the default search term
-    const defaultSearchTerm = "Indian startups";
+  window.addEventListener("load", () => fetchNews("Indian startups")); // Default to startup focus
 
-    // Perform the initial search when the page loads
-    window.addEventListener("load", () => fetchNews(defaultSearchTerm));
+  async function fetchNews(query) {
+    try {
+      let allItems = [];
+      const MAX_ARTICLES = 1000; // Change this value to set the total number of articles (e.g., 20, 50, 100)
+      for (let start = 1; start <= MAX_ARTICLES && allItems.length < MAX_ARTICLES; start += 10) {
+        const url = new URL(BASE_URL);
+        url.searchParams.append("key", API_KEY);
+        url.searchParams.append("cx", CSE_ID);
+        url.searchParams.append("q", encodeURIComponent(query));
+        url.searchParams.append("num", "10"); // Max 10 per request in free tier
+        url.searchParams.append("start", start.toString());
+        url.searchParams.append("dateRestrict", "m1"); // Last month
+        url.searchParams.append("sort", "date"); // Sort by date
 
-    async function fetchNews(query) {
-        const res = await fetch(`${url}${query}&apiKey=${API_KEY}`);
+        console.log("Request URL:", url.toString());
+        const res = await fetch(url.toString(), {
+          method: "GET",
+          headers: {
+            "Accept": "application/json"
+          }
+        });
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`HTTP error! Status: ${res.status} - ${errorText || 'No additional details'}`);
+        }
         const data = await res.json();
-        bindData(data.articles);
+        console.log("API Response:", data);
+        if (data.items && data.items.length > 0) {
+          allItems = allItems.concat(data.items);
+        }
+        // Stop if no more items or max articles reached
+        if (data.items.length < 10 || allItems.length >= MAX_ARTICLES) break;
+      }
+      console.log("All Items Count:", allItems.length);
+      if (allItems.length === 0) {
+        throw new Error("No items found in response");
+      }
+      bindData(allItems);
+    } catch (error) {
+      console.error("Error fetching news:", error);
+      let errorMessage = `Failed to load news. Check console for details. Error: ${error.message}`;
+      if (error.message.includes("400")) {
+        errorMessage += "<br>Possible causes: Invalid API key, CSE ID, or query. Verify at https://console.cloud.google.com/";
+      } else if (error.message.includes("403")) {
+        errorMessage += "<br>Quota exceeded or API not enabled. Check Google Cloud Console.";
+      }
+      document.getElementById("cardscontainer").innerHTML = `<p>${errorMessage}</p>`;
+    }
+  }
+
+  function bindData(items) {
+    const cardsContainer = document.getElementById("cardscontainer");
+    const newsCardTemplate = document.getElementById("template-news-card");
+
+    cardsContainer.innerHTML = "";
+
+    if (!items || items.length === 0) {
+      cardsContainer.innerHTML = "<p>No articles found. Try focusing on 'startups' for better results.</p>";
+      return;
     }
 
-    function bindData(articles) {
-        const cardsContainer = document.getElementById("cardscontainer");
-        const newsCardTemplate = document.getElementById("template-news-card");
-
-        cardsContainer.innerHTML = "";
-
-        articles.forEach((article) => {
-            if (!article.urlToImage) return;
-
-            const cardClone = newsCardTemplate.content.cloneNode(true);
-            fillDataInCard(cardClone, article);
-            cardsContainer.appendChild(cardClone);
-        });
-    }
-
-    function fillDataInCard(cardClone, article) {
-        const newsImg = cardClone.querySelector("#news-img");
-        const newsTitle = cardClone.querySelector("#news-title");
-        const newsSource = cardClone.querySelector("#news-source");
-        const newsDesc = cardClone.querySelector("#news-desc");
-
-        newsImg.src = article.urlToImage;
-        newsTitle.innerHTML = `${article.title.slice(0, 60)}...`;
-        newsDesc.innerHTML = `${article.description.slice(0, 150)}...`;
-
-        const date = new Date(article.publishedAt).toLocaleString("en-US", { timeZone: "Asia/Jakarta" });
-
-        newsSource.innerHTML = `${article.source.name} · ${date}`;
-
-        cardClone.firstElementChild.addEventListener("click", () => {
-            window.open(article.url, "_blank");
-        });
-    }
-
-    let curSelectedNav = null;
-    function onNavItemClick(id) {
-        fetchNews(id);
-        const navItem = document.getElementById(id);
-        curSelectedNav?.classList.remove("active");
-        curSelectedNav = navItem;
-        curSelectedNav.classList.add("active");
-    }
-
-    const searchButton = document.getElementById("search-button");
-    const searchText = document.getElementById("search-text");
-
-    // Disable the search input and set its value to the default search term
-    searchText.value = defaultSearchTerm;
-    searchText.disabled = true;
-
-    searchButton.addEventListener("click", () => {
-        // Fetch news using the default search term
-        fetchNews(defaultSearchTerm);
-        curSelectedNav?.classList.remove("active");
-        curSelectedNav = null;
+    // Remove image filtering to maximize articles (optional)
+    items.forEach((item) => {
+      const cardClone = newsCardTemplate.content.cloneNode(true);
+      fillDataInCard(cardClone, item);
+      cardsContainer.appendChild(cardClone);
     });
+  }
 
-</script>
+  function fillDataInCard(cardClone, item) {
+    const newsImg = cardClone.querySelector("#news-img");
+    const newsTitle = cardClone.querySelector("#news-title");
+    const newsSource = cardClone.querySelector("#news-source");
+    const newsDesc = cardClone.querySelector("#news-desc");
+
+    // Use placeholder if no image to avoid skipping articles
+    newsImg.src = item.pagemap?.cse_image?.[0]?.src || item.pagemap?.cse_thumbnail?.[0]?.src || "https://via.placeholder.com/400x200";
+    newsTitle.innerHTML = item.title.length > 60 ? `${item.title.slice(0, 60)}...` : item.title;
+    newsDesc.innerHTML = item.snippet && item.snippet.length > 150 ? `${item.snippet.slice(0, 150)}...` : item.snippet || "No description available";
+
+    const date = new Date(item.formattedDate || item.snippetDate || Date.now()).toLocaleString("en-US", { timeZone: "Asia/Jakarta" });
+    newsSource.innerHTML = `${item.displayLink} · ${date}`;
+
+    cardClone.firstElementChild.addEventListener("click", () => {
+      window.open(item.link, "_blank");
+    });
+  }
+
+  let curSelectedNav = null;
+  function onNavItemClick(category) {
+    let query = category === "startup" ? "Indian startups" : `${category} careers startup`;
+    fetchNews(query);
+    const navItem = document.getElementById(category);
+    curSelectedNav?.classList.remove("active");
+    curSelectedNav = navItem;
+    curSelectedNav.classList.add("active");
+  }
+
+  const searchButton = document.getElementById("search-button");
+  const searchText = document.getElementById("search-text");
+
+  searchText.disabled = false;
+  searchText.value = "";
+
+  searchButton.addEventListener("click", () => {
+    const query = searchText.value.trim();
+    if (!query) {
+      fetchNews("Indian startups");
+    } else {
+      fetchNews(`${query} startup`);
+    }
+    curSelectedNav?.classList.remove("active");
+    curSelectedNav = null;
+  });
+
+  searchText.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+      searchButton.click();
+    }
+  });
+</script></body>
 </html>
