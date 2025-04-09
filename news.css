@@ -51,16 +51,18 @@ nav {
 }
 
 .main-nav {
-    justify-content: space-between;
+    justify-content: flex-start; /* Changed to align logo to the left */
     padding-block: 8px;
+    padding-inline: 16px; /* Added padding for better spacing */
 }
 
-.company-logo img {
-    width: 120px;
-}
-
-.nav-links ul {
-    gap: 16px;
+.logo {
+    max-width: 120px; /* Increased size to match the screenshot's logo prominence */
+    height: auto;
+    border-radius: 20px; /* Circular border radius to match the screenshot */
+    padding: 5px;
+    background-color: #fff; /* Optional: Adds a subtle background to enhance the logo */
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.1); /* Optional: Adds a slight shadow for depth */
 }
 
 .hover-link {
@@ -147,8 +149,3 @@ main {
 .news-source {
     margin-block: 12px;
 }
-.logo {
-            max-width: 40px; /* Adjusted to match screenshot */
-            padding: 5px;
-            border-radius: 20px;
-        }
