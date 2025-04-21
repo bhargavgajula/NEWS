@@ -31,32 +31,28 @@
 </template>
 
 <script>
-  const API_KEY = "AIzaSyDfMbHgSvWY4KT2coSua-LlMonaL4_I3FQ"; // Replace with your Google Cloud API key
-  const CSE_ID = "c3d37feaf90974788"; // Replace with your Custom Search Engine ID
-  const BASE_URL = "https://www.googleapis.com/customsearch/v1";
-
-  window.addEventListener("load", () => fetchNews("Indian startups")); // Default to startup focus
+  window.addEventListener("load", () => {
+    fetchNews("Indian startups"); // Hardcoded to "Indian startups" as requested
+  });
 
   async function fetchNews(query) {
     try {
       let allItems = [];
-      const MAX_ARTICLES = 1000; // Change this value to set the total number of articles (e.g., 20, 50, 100)
+      const MAX_ARTICLES = 50; // Adjusted to free tier max
       for (let start = 1; start <= MAX_ARTICLES && allItems.length < MAX_ARTICLES; start += 10) {
-        const url = new URL(BASE_URL);
-        url.searchParams.append("key", API_KEY);
-        url.searchParams.append("cx", CSE_ID);
+        const url = new URL("https://www.googleapis.com/customsearch/v1");
+        url.searchParams.append("key", "AIzaSyDfMbHgSvWY4KT2coSua-LlMonaL4_I3FQ");
+        url.searchParams.append("cx", "c3d37feaf90974788");
         url.searchParams.append("q", encodeURIComponent(query));
-        url.searchParams.append("num", "10"); // Max 10 per request in free tier
+        url.searchParams.append("num", "10");
         url.searchParams.append("start", start.toString());
-        url.searchParams.append("dateRestrict", "m1"); // Last month
-        url.searchParams.append("sort", "date"); // Sort by date
+        url.searchParams.append("dateRestrict", "m1");
+        url.searchParams.append("sort", "date");
 
         console.log("Request URL:", url.toString());
         const res = await fetch(url.toString(), {
           method: "GET",
-          headers: {
-            "Accept": "application/json"
-          }
+          headers: { "Accept": "application/json" }
         });
         if (!res.ok) {
           const errorText = await res.text();
@@ -67,7 +63,6 @@
         if (data.items && data.items.length > 0) {
           allItems = allItems.concat(data.items);
         }
-        // Stop if no more items or max articles reached
         if (data.items.length < 10 || allItems.length >= MAX_ARTICLES) break;
       }
       console.log("All Items Count:", allItems.length);
@@ -98,7 +93,6 @@
       return;
     }
 
-    // Remove image filtering to maximize articles (optional)
     items.forEach((item) => {
       const cardClone = newsCardTemplate.content.cloneNode(true);
       fillDataInCard(cardClone, item);
@@ -112,7 +106,6 @@
     const newsSource = cardClone.querySelector("#news-source");
     const newsDesc = cardClone.querySelector("#news-desc");
 
-    // Use placeholder if no image to avoid skipping articles
     newsImg.src = item.pagemap?.cse_image?.[0]?.src || item.pagemap?.cse_thumbnail?.[0]?.src || "https://via.placeholder.com/400x200";
     newsTitle.innerHTML = item.title.length > 60 ? `${item.title.slice(0, 60)}...` : item.title;
     newsDesc.innerHTML = item.snippet && item.snippet.length > 150 ? `${item.snippet.slice(0, 150)}...` : item.snippet || "No description available";
@@ -124,38 +117,6 @@
       window.open(item.link, "_blank");
     });
   }
-
-  let curSelectedNav = null;
-  function onNavItemClick(category) {
-    let query = category === "startup" ? "Indian startups" : `${category} careers startup`;
-    fetchNews(query);
-    const navItem = document.getElementById(category);
-    curSelectedNav?.classList.remove("active");
-    curSelectedNav = navItem;
-    curSelectedNav.classList.add("active");
-  }
-
-  const searchButton = document.getElementById("search-button");
-  const searchText = document.getElementById("search-text");
-
-  searchText.disabled = false;
-  searchText.value = "";
-
-  searchButton.addEventListener("click", () => {
-    const query = searchText.value.trim();
-    if (!query) {
-      fetchNews("Indian startups");
-    } else {
-      fetchNews(`${query} startup`);
-    }
-    curSelectedNav?.classList.remove("active");
-    curSelectedNav = null;
-  });
-
-  searchText.addEventListener("keypress", (e) => {
-    if (e.key === "Enter") {
-      searchButton.click();
-    }
-  });
-</script></body>
+</script>
+</body>
 </html>
